@@ -1,0 +1,17 @@
+# virtualenv
+.conda*/
+
+# development misc
+tmp/
+.vscode/
+*.ipynb
+.dockerignore
+.gitignore
+
+# Byte-compiled / optimized / DLL files
+.pytest_cache/
+__pycache__/
+
+# unit test
+tests/
+
