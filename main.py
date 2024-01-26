@@ -18,13 +18,15 @@ class Detector(threading.Thread):
     def __init__(self):
         super(Detector, self).__init__()
         self.stop_signal = threading.Event()
+        self.status = False
 
     def run(self):
         while not self.stop_signal.is_set():
             anomaly_log = str(controller.anomaly_detection(days=1, hours=0, minutes=5))
             error_code = controller.classification_anomlay(inputdata=anomaly_log)
             print(error_code)
-            action = controller.real_detection(error_code)
+            action = controller.real_detection(error_code, anomaly_log)
+            print(action)
             if "nothing to do" not in action:
                 instruction(action)
             time.sleep(180)
@@ -64,7 +66,8 @@ def instruction(query):
     output = ""
     # request_body: dict[str, str] = request.json
     # query = str(request_body["query"])
-    # send query get instruction_code (e.g 1: chat , 2: detection, 3: analyze, 4: cpu up scale, 5: memory up scale)
+    # send query get instruction_code (e.g 1: chat , 2:  analyzen, 3:cpu up scale, 4:memory up scale , 5: detectio,
+    # 6: sendemail (to do))
     temp = controller.get_functioncode(inputdata=query)
     try:
         print(temp)
@@ -77,6 +80,8 @@ def instruction(query):
     if instruction_code == 1:
         output = controller.gptqa(str(arg1))
     elif instruction_code == 2:
+        if (int(arg1) == -1) and (int(arg2) == -1) and (int(arg3) == -1):
+            arg1 = 1
         anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3)))
         output = controller.analyze_data(anomaly_log)
     elif instruction_code == 3:
@@ -99,13 +104,15 @@ def instruction(query):
         if status:
             output = str(arg1) + " memory finish"
         else:
-            output = str(arg1) + "memory fail"
+            output = str(arg1) + " memory fail"
     elif instruction_code == 5:
-        if str(arg1) == "stop":
+        if (str(arg1) == "stop") and (detector.status):
             detector.stop()
-        else:
+            detector.status = False
+        elif detector.status is False:
             detector.start()
-        output = str(arg1) + "auto detection"
+            detector.status = True
+        output = str(arg1) + " auto detection"
 
     return output
     # send lanchain
@@ -123,13 +130,9 @@ def send_query():
     """
     request_body: dict[str, str] = request.json
     query = str(request_body["query"])
-
-    # return instruction(query=query)
-    try:
-        return instruction(query=query)
-    except Exception as e:
-        print(f"Failed to process query {query} with error {e}")
-        return
+    output = instruction(query=query)
+    print(output)
+    return json.dumps(output)
 
 
 if __name__ == "__main__":

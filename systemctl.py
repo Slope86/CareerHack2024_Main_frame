@@ -70,7 +70,7 @@ class Controller:
         response = requests.post(self.__login_url, json=data)
         return response.json().get("access_token")
 
-    def real_detection(self, inputdata: str = None) -> str:
+    def real_detection(self, inputdata: str = None, ori_log: str = None) -> str:
         """real time detection input error dict from classification anomaly api
 
         Args:
@@ -81,7 +81,7 @@ class Controller:
         """
         access_token = self.login_api()
         headers = {"Authorization": f"Bearer {access_token}"}
-        data = {"inputdata": inputdata}
+        data = {"inputdata": inputdata, "ori_log": ori_log}
         response = requests.post(self.__real_detection_url, json=data, headers=headers)
         response_json = response.json()
 
@@ -135,7 +135,6 @@ class Controller:
         data = {"inputdata": inputdata}
         response = requests.post(self.__analyze_data_url, json=data, headers=headers)
         response_json = response.json()
-
         return response_json
 
     def gptqa(self, query: str = None) -> str:
@@ -262,15 +261,21 @@ class Controller:
 
                 if time_minute >= 2:
                     if index not in self.anomaly_log:
+                        request_count = " ".join(
+                            [
+                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                for index, row in data.loc[index, col_class["request_count"]].iterrows()
+                            ]
+                        )
                         self.anomaly_log[
                             str(index)
                         ] = f"CPU utilization {value}% (>=60%). \
                         other information: cpu:{data.loc[index,col_class['cpu']].values[0]}% \
                         memory:{data.loc[index,col_class['memory']].values[0]}% \
                         instance_count:{data.loc[index,col_class['instance']].values[0]} \
-                        request_count:{str(data.loc[index,col_class['request_count']]).replace('  ',':')} \
+                        request_count:{request_count} \
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
-                            "  ", " "
+                            "  ", ""
                         )
                     else:
                         self.anomaly_log[str(index)] = (
@@ -295,15 +300,21 @@ class Controller:
 
                 if time_minute >= 2:
                     if index not in self.anomaly_log:
+                        request_count = " ".join(
+                            [
+                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                for index, row in data.loc[[index], col_class["request_count"]].iterrows()
+                            ]
+                        )
                         self.anomaly_log[
                             str(index)
                         ] = f"memory utilization {value}% (>=60%). \
                         other information: cpu:{data.loc[index,col_class['cpu']].values[0]}% \
                         memory:{data.loc[index,col_class['memory']].values[0]}% \
                         instance_count:{data.loc[index,col_class['instance']].values[0]} \
-                        request_count:{str(data.loc[index,col_class['request_count']]).replace('  ',':')} \
+                        request_count:{request_count} \
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
-                            "  ", " "
+                            "  ", ""
                         )
                     else:
                         self.anomaly_log[str(index)] = (
@@ -321,15 +332,21 @@ class Controller:
             for _, value in row.items():
                 if int(value) != 0:
                     if index not in self.anomaly_log:
+                        request_count = " ".join(
+                            [
+                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                for index, row in data.loc[[index], col_class["request_count"]].iterrows()
+                            ]
+                        )
                         self.anomaly_log[
                             str(index)
                         ] = f"cloud run restart at {value} ms. \
                         other information: cpu:{data.loc[index,col_class['cpu']].values[0]}% \
                         memory:{data.loc[index,col_class['memory']].values[0]}% \
                         instance_count:{data.loc[index,col_class['instance']].values[0]} \
-                        request_count:{str(data.loc[index,col_class['request_count']]).replace('  ',':')} \
+                        request_count:{request_count} \
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
-                            "  ", " "
+                            "  ", ""
                         )
                     else:
                         self.anomaly_log[str(index)] = (
@@ -347,15 +364,21 @@ class Controller:
             for _, value in row.items():
                 if int(value) >= 2:
                     if index not in self.anomaly_log:
+                        request_count = " ".join(
+                            [
+                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                for index, row in data.loc[[index], col_class["request_count"]].iterrows()
+                            ]
+                        )
                         self.anomaly_log[
                             str(index)
                         ] = f"instance count={value} (>= 2). \
                         other information: cpu:{data.loc[index,col_class['cpu']].values[0]}% \
                         memory:{data.loc[index,col_class['memory']].values[0]}% \
                         instance_count:{data.loc[index,col_class['instance']].values[0]} \
-                        request_count:{str(data.loc[index,col_class['request_count']]).replace('  ',':')} \
+                        request_count:{request_count} \
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
-                            "  ", " "
+                            "  ", ""
                         )
                     else:
                         self.anomaly_log[str(index)] = f",instance count={value} (>= 2)" + self.anomaly_log[str(index)]
@@ -372,15 +395,21 @@ class Controller:
                 status_code = str(columnname)
                 if ((status_code[0] == "5") or (status_code[0] == "4")) and (int(value) > 0):
                     if index not in self.anomaly_log:
+                        request_count = " ".join(
+                            [
+                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                for index, row in data.loc[[index], col_class["request_count"]].iterrows()
+                            ]
+                        )
                         self.anomaly_log[
                             str(index)
                         ] = f"request fail. error code: {status_code}. \
                         other information: cpu:{data.loc[index,col_class['cpu']].values[0]}% \
                         memory:{data.loc[index,col_class['memory']].values[0]}% \
                         instance_count:{data.loc[index,col_class['instance']].values[0]} \
-                        request_count:{str(data.loc[index,col_class['request_count']]).replace('  ',':')} \
+                        request_count:{request_count} \
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
-                            "  ", " "
+                            "  ", ""
                         )
 
                     else:
@@ -423,13 +452,12 @@ class Controller:
             memory.columns = ["Container Memory Utilization (%)"]
             startup_latency.columns = ["Container Startup Latency (ms)"]
             for col in requests_count.columns:
-                requests_count.rename(columns={col: "http code" + col})
+                requests_count.rename(columns={col: "http code" + str(col)})
             for i in range(len(requests_latencies.columns)):
                 if i != 0:
                     requests_latencies.iloc[:, 0] += requests_latencies.iloc[:, i]
             requests_latencies = requests_latencies.drop(requests_latencies.columns[1:], axis=1)
             requests_latencies.columns = ["Request Latency (ms)"]
-
         else:
             files = os.listdir()
             for f in files:
@@ -464,6 +492,7 @@ class Controller:
                 elif f == "Request Latency.csv":
                     requests_latencies = temp
                     requests_latencies.set_index("Time", inplace=True)
+
         columns_dict = {}
         columns_dict["instance"] = instance.columns
         columns_dict["cpu"] = cpu.columns
@@ -477,16 +506,17 @@ class Controller:
         data = data.fillna(0)
         # CPU utilization >= 60%
         self.cpu_limit_detection(data=data, col_class=columns_dict)
-
+        print("cpu")
         # Memory utilization >= 60%
         self.memory_limit_detection(data=data, col_class=columns_dict)
-
+        print("memory")
         # Cloud run re-start (startup_latency != 0)
         self.cloud_run_restart_detection(data=data, col_class=columns_dict)
-
+        print("cloud run")
         # Instance count >= 2
         self.instance_count_detection(data=data, col_class=columns_dict)
+        print("instance_count")
         # Fail Response
         self.request_fail(data=data, col_class=columns_dict)
-
+        print("request_fail")
         return self.anomaly_log
