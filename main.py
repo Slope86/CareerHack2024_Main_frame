@@ -145,15 +145,25 @@ def instruction(query,dataset=False,error_code="None"):
         instruction_code =2
         arg1=1
         arg2=1
+        arg3=1
 
     if instruction_code == 1:
         output = controller.gptqa(str(arg1))
     elif instruction_code == 2:
         if (int(arg1) == -1) and (int(arg2) == -1) and (int(arg3) == -1):
             arg1 = 1
+        if (int(arg1) == -1):
+            arg1=0
+        if (int(arg2) == -1):
+            arg2=0
+        if (int(arg3) == -1):
+            arg3=0
+        print(arg1,arg2)
+        print(int(arg1),int(arg2))
         anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3),dataset=dataset))
         #sortor=Sortor(anomaly_log)
         #sortor.start()
+        print("flag")
         output = controller.analyze_data(anomaly_log)
        # sorted_log=sortor.get_result()
         output = f'error log: \n{json.dumps(anomaly_log)} \nanalyze: \n {anomaly_log}'
