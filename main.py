@@ -38,7 +38,7 @@ class Detector(threading.Thread):
 
 class Sortor(threading.Thread):
     def __init__(self,arg):
-        super(Sortor, self).__init__()
+        super(sortor, self).__init__()
         self.stop_signal = threading.Event()
         self.status = False
         self.result= None
@@ -109,10 +109,10 @@ def anomaly_detection():
     """
     request_body: dict[str, str] = request.json
     days = int(request_body["days"])
-    hours = int(request_body["hours"]
+    hours = int(request_body["hours"])
     minutes = int(request_body["minutes"])
     dataset = request_body.get("dataset",False)
-    anomaly_log = controller.anomaly_detection(days=days, hours=hours, minutes=minutes,dataset=False)
+    anomaly_log = controller.anomaly_detection(days=days, hours=hours, minutes=minutes,dataset=dataset)
 
     return json.dumps(anomaly_log)
 
@@ -144,7 +144,6 @@ def instruction(query,dataset=False,error_code="None"):
         instruction_code =2
         arg1=1
         arg2=1
-        arg3=1
 
     if instruction_code == 1:
         output = controller.gptqa(str(arg1))
