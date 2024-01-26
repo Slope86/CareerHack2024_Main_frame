@@ -30,7 +30,7 @@ class Controller:
         gptqa_url: str = LLMAPI + "/api/gptqa",
         real_detection_url: str = LLMAPI + "/api/real_detection",
         sorter_log_url:str = LLMAPI + "/api/sort_log",
-        get_all_metrice_url: str=LLMAPI+"/api/all_system_metric",
+        get_all_metrice_url: str=APIURL+"/api/all_system_metric",
         username: str = USERNAME,
         password: str = PASSWORD,
         cpu: int = 1,
