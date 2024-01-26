@@ -32,7 +32,7 @@ class Detector(threading.Thread):
             print(action)
             if "nothing to do" not in action:
                 instruction(action,error_code=error_code)
-            time.sleep(300)
+            time.sleep(30)
 
     def stop(self):
         self.stop_signal.set()
@@ -94,8 +94,8 @@ class Laout(threading.Thread):
                 print("Error message: ", e)
                 return False
     def run(self):
-        time.sleep(600)
-        if len(controller.anomaly_detection(days=0,hours=0,minutes=1,dataset=False) )!=0:
+        time.sleep(30)
+        if len(controller.anomaly_detection(days=0,hours=0,minutes=5,dataset=False) )!=0:
             self.Laout_email()
 
 detector = Detector()
@@ -202,6 +202,8 @@ def instruction(query,dataset=False,error_code="None"):
 
         if kickout.status is False:
             kickout.start()
+        
+        output="send email"
     return output
     # send lanchain
 

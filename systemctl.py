@@ -335,7 +335,7 @@ class Controller:
                 else:
                     time_minute = 0
 
-                if time_minute >= 2:
+                if time_minute >= 1:
                     flag = False
                     temp=""
                     for i in range(5):
@@ -381,7 +381,7 @@ class Controller:
                 else:
                     time_minute = 0
 
-                if time_minute >= 2:
+                if time_minute >= 1:
                     flag = False
                     temp=""
                     for i in range(5):
