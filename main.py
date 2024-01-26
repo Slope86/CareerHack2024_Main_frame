@@ -158,15 +158,13 @@ def instruction(query,dataset=False,error_code="None"):
             arg2=0
         if (int(arg3) == -1):
             arg3=0
-        print(arg1,arg2)
-        print(int(arg1),int(arg2))
         anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3),dataset=dataset))
-        #sortor=Sortor(anomaly_log)
-        #sortor.start()
-        print("flag")
-        output = controller.analyze_data(anomaly_log)
-       # sorted_log=sortor.get_result()
-        output = f'error log: \n{json.dumps(anomaly_log)} \nanalyze: \n {anomaly_log}'
+        sortor=Sortor(anomaly_log[:5000])
+        sortor.start()
+        print(len(anomaly_log))
+        output = controller.analyze_data(anomaly_log[:5000])
+        sorted_log=sortor.get_result()
+        output = f'error log: \n{json.dumps(sorted_log)} \nanalyze: \n {output}'
     elif instruction_code == 3:
         if str(arg1) == "sub":
             cpu = controller.cpu - 1

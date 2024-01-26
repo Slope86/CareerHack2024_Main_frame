@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -29,6 +30,7 @@ class Controller:
         gptqa_url: str = LLMAPI + "/api/gptqa",
         real_detection_url: str = LLMAPI + "/api/real_detection",
         sorter_log_url:str = LLMAPI + "/api/sort_log",
+        get_all_metrice_url: str=LLMAPI+"/api/get_all_metrice",
         username: str = USERNAME,
         password: str = PASSWORD,
         cpu: int = 1,
@@ -56,6 +58,7 @@ class Controller:
         self.__login_url = login_url
         self.__real_detection_url = real_detection_url
         self.__sorter_log_url = sorter_log_url
+        self.__get_all_metrice_url=get_all_metrice_url
         self.__username = username
         self.__password = password
         self.receivers = ["henry880510@gmail.com",'another10508@gmail.com','lauren444416@gmail.com',"cjh9027@gmail.com"]
@@ -239,6 +242,33 @@ class Controller:
 
         return df
 
+    def get_all_system_metric(self, days: int = 0, hours: int = 0, minutes: int = 0) -> dict[str, pd.DataFrame]:
+        access_token = self.login_api()
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        data = {"days": days, "hours": hours, "minutes": minutes}
+
+        # A get request to the API
+        response = requests.post(self.__get_all_metrice_url, json=data, headers=headers)
+
+        response_json = response.json()
+
+        metric_list = [
+            "request_count",
+            "request_latencies",
+            "instance_count",
+            "CPU_utilization",
+            "memory_utilization",
+            "startup_latency",
+        ]
+
+        metric_pd_list: dict[str, pd.DataFrame] = {}
+        for metric in metric_list:
+            df = pd.read_json(StringIO(response_json.get(metric)))
+            metric_pd_list[metric] = df
+
+        return metric_pd_list
+
     def cpu_up_scale(self, cpu: int = 1) -> bool:
         """adjust cloud cpu limit, 1 cpu = 1000m
 
@@ -299,14 +329,21 @@ class Controller:
         """
         time_minute = 0
         for index, row in data.loc[:, col_class["cpu"]].iterrows():
-            for _, value in row.items():
+            for _, value in row.items():                  
                 if int(value) >= threshold:
                     time_minute += 1
                 else:
                     time_minute = 0
 
                 if time_minute >= 2:
-                    if index not in self.anomaly_log:
+                    flag = False
+                    temp=""
+                    for i in range(5):
+                        time_delta = timedelta(minutes=i)
+                        if str(index-time_delta) in self.anomaly_log:
+                            flag=True
+                            temp=str(index-time_delta)
+                    if flag is False:
                         request_count = " ".join(
                             [
                                 " ".join([f"{col}={val} times." for col, val in row.items()])
@@ -323,9 +360,9 @@ class Controller:
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
                             "  ", ""
                         )
-                    else:
-                        self.anomaly_log[str(index)] = (
-                            f",CPU utilization {value}% (>=60%)," + self.anomaly_log[str(index)]
+                    elif "CPU utilization" not in self.anomaly_log[temp]:
+                        self.anomaly_log[temp] = (
+                            f",CPU utilization {value}% (>=60%)," + self.anomaly_log[temp]
                         )
 
     def memory_limit_detection(self, threshold: int = 60, data: pd.DataFrame = None, col_class: dict = None) -> None:
@@ -345,7 +382,14 @@ class Controller:
                     time_minute = 0
 
                 if time_minute >= 2:
-                    if index not in self.anomaly_log:
+                    flag = False
+                    temp=""
+                    for i in range(5):
+                        time_delta = timedelta(minutes=i)
+                        if str(index-time_delta) in self.anomaly_log:
+                            flag=True
+                            temp=str(index-time_delta)
+                    if flag is False:
                         request_count = " ".join(
                             [
                                 " ".join([f"{col}={val} times." for col, val in row.items()])
@@ -362,9 +406,9 @@ class Controller:
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
                             "  ", ""
                         )
-                    else:
-                        self.anomaly_log[str(index)] = (
-                            f",memory  utilization {value}% (>=60%)" + self.anomaly_log[str(index)]
+                    elif "memory utilization" not in self.anomaly_log[temp]:
+                        self.anomaly_log[temp] = (
+                            f",memory utilization {value}% (>=60%)," + self.anomaly_log[temp]
                         )
 
     def cloud_run_restart_detection(self, data: pd.DataFrame = None, col_class: dict = None) -> None:
@@ -377,7 +421,14 @@ class Controller:
         for index, row in data.loc[:, col_class["start"]].iterrows():
             for _, value in row.items():
                 if int(value) != 0:
-                    if index not in self.anomaly_log:
+                    flag = False
+                    temp=""
+                    for i in range(5):
+                        time_delta = timedelta(minutes=i)
+                        if str(index-time_delta) in self.anomaly_log:
+                            flag=True
+                            temp=str(index-time_delta)
+                    if flag is False:
                         request_count = " ".join(
                             [
                                 " ".join([f"{col}={val} times." for col, val in row.items()])
@@ -394,9 +445,9 @@ class Controller:
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
                             "  ", ""
                         )
-                    else:
-                        self.anomaly_log[str(index)] = (
-                            f",cloud run restart at {value} ms" + self.anomaly_log[str(index)]
+                    elif "cloud run restart" not in self.anomaly_log[temp]:
+                        self.anomaly_log[temp] = (
+                            f",cloud run restart at {value} ms ," + self.anomaly_log[temp]
                         )
 
     def instance_count_detection(self, data: pd.DataFrame = None, col_class: dict = None) -> None:
@@ -406,10 +457,19 @@ class Controller:
             data (pd.DataFrame, optional):  system data whether from dataset or real time system. Defaults to None.
             col_class (dict, optional): columns name for all feature. Defaults to None. Defaults to None.
         """
+        if "Instance Count (active)" not in data.columns:
+            return
         for index, row in data.loc[:, ["Instance Count (active)"]].iterrows():
             for _, value in row.items():
                 if int(value) >= 2:
-                    if index not in self.anomaly_log:
+                    flag = False
+                    temp=""
+                    for i in range(5):
+                        time_delta = timedelta(minutes=i)
+                        if str(index-time_delta) in self.anomaly_log:
+                            flag=True
+                            temp=str(index-time_delta)
+                    if flag is False:
                         request_count = " ".join(
                             [
                                 " ".join([f"{col}={val} times." for col, val in row.items()])
@@ -426,8 +486,10 @@ class Controller:
                         request_latencies:{data.loc[index,col_class['request_latencies']].values[0]} ms".replace(
                             "  ", ""
                         )
-                    else:
-                        self.anomaly_log[str(index)] = f",instance count={value} (>= 2)" + self.anomaly_log[str(index)]
+                    elif "instance count" not in self.anomaly_log[temp]:
+                        self.anomaly_log[temp] = (
+                            f",instance count={value} (>= 2)," + self.anomaly_log[temp]
+                        )
 
     def request_fail(self, data: pd.DataFrame = None, col_class: dict = None) -> None:
         """detection request fail error
@@ -440,7 +502,14 @@ class Controller:
             for columnname, value in row.items():
                 status_code = str(columnname)
                 if ((status_code[0] == "5") or (status_code[0] == "4")) and (int(value) > 0):
-                    if index not in self.anomaly_log:
+                    flag = False
+                    temp=""
+                    for i in range(5):
+                        time_delta = timedelta(minutes=i)
+                        if str(index-time_delta) in self.anomaly_log:
+                            flag=True
+                            temp=str(index-time_delta)
+                    if flag is False:
                         request_count = " ".join(
                             [
                                 " ".join([f"{col}={val} times." for col, val in row.items()])
@@ -458,10 +527,11 @@ class Controller:
                             "  ", ""
                         )
 
-                    else:
-                        self.anomaly_log[str(index)] = (
-                            f"request fail. error code: {status_code}." + self.anomaly_log[str(index)]
+                    elif "request fail" not in self.anomaly_log[temp]:
+                        self.anomaly_log[temp] = (
+                            f",request fail. error code: {status_code}." + self.anomaly_log[temp]
                         )
+
 
     def anomaly_detection(
         self, days: int = 0, hours: int = 5, minutes: int = 0, datasetpath: str = "./dataset/", dataset: bool = False
@@ -483,31 +553,36 @@ class Controller:
         Returns:
             dict: anomaly log
         """
-
+        self.anomaly_log={}
         if dataset is False:
-            instance = self.get_system_metric(metric="instance_count", days=days, hours=hours, minutes=minutes)
-            cpu = self.get_system_metric(metric="CPU_utilization", days=days, hours=hours, minutes=minutes)
-            memory = self.get_system_metric(metric="memory_utilization", days=days, hours=hours, minutes=minutes)
-            startup_latency = self.get_system_metric(metric="startup_latency", days=days, hours=hours, minutes=minutes)
-            requests_count = self.get_system_metric(metric="request_count", days=days, hours=hours, minutes=minutes)
-            requests_latencies = self.get_system_metric(
-                metric="request_latencies", days=days, hours=hours, minutes=minutes
-            )
-            instance.columns = ["Instance Count (active)", "Instance Count (idle)"]
-            cpu.columns = ["Container CPU Utilization (%)"]
-            memory.columns = ["Container Memory Utilization (%)"]
-            startup_latency.columns = ["Container Startup Latency (ms)"]
+            metric_pd_list = self.get_all_system_metric(days=days, hours=hours, minutes=minutes)
+            instance = metric_pd_list["instance_count"]
+            cpu = metric_pd_list["CPU_utilization"]
+            memory = metric_pd_list["memory_utilization"]
+            startup_latency = metric_pd_list["startup_latency"]
+            requests_count = metric_pd_list["request_count"]
+            requests_latencies = metric_pd_list["request_latencies"]
+            if len(instance) !=0:
+                instance.columns = ["Instance Count (active)", "Instance Count (idle)"]
+            if len(cpu) !=0:
+                cpu.columns = ["Container CPU Utilization (%)"]
+            if len(memory) !=0:
+                memory.columns = ["Container Memory Utilization (%)"]
+            if len(startup_latency) !=0:
+                startup_latency.columns = ["Container Startup Latency (ms)"]
             for col in requests_count.columns:
                 requests_count.rename(columns={col: "http code" + str(col)})
             for i in range(len(requests_latencies.columns)):
                 if i != 0:
                     requests_latencies.iloc[:, 0] += requests_latencies.iloc[:, i]
-            requests_latencies = requests_latencies.drop(requests_latencies.columns[1:], axis=1)
-            requests_latencies.columns = ["Request Latency (ms)"]
+            if len(requests_latencies) !=0:
+                requests_latencies = requests_latencies.drop(requests_latencies.columns[1:], axis=1)
+                requests_latencies.columns = ["Request Latency (ms)"]
         else:
             files = os.listdir(datasetpath)
             for f in files:
                 temp = pd.read_csv(datasetpath + f)
+                temp[temp.columns[0]]  = pd.to_datetime(temp[temp.columns[0]])
                 if f == "Container CPU Utilization.csv":
                     cpu = temp
                     cpu.set_index(temp.columns[0], inplace=True,drop=True)
@@ -525,15 +600,16 @@ class Controller:
                     requests_count.set_index(temp.columns[0], inplace=True,drop=True)
                     for col in requests_count.columns:
                         if "1" in col:
-                            requests_count.rename(columns={col: "http code 1xx"})
+                            requests_count.rename(columns={col: "http code 1xx"},inplace=True)
                         if "2" in col:
-                            requests_count.rename(columns={col: "http code 2xx"})
+                            requests_count.rename(columns={col: "http code 2xx"},inplace=True)
                         if "3" in col:
-                            requests_count.rename(columns={col: "http code 3xx"})
+                            requests_count.rename(columns={col: "http code 3xx"},inplace=True)
                         if "4" in col:
-                            requests_count.rename(columns={col: "http code 4xx"})
+                            requests_count.rename(columns={col: "http code 4xx"},inplace=True)
                         if "5" in col:
-                            requests_count.rename(columns={col: "http code 5xx"})
+                            requests_count.rename(columns={col: "http code 5xx"},inplace=True)
+                    
                 elif f == "Request Latency.csv":
                     requests_latencies = temp
                     requests_latencies.set_index(temp.columns[0], inplace=True)
@@ -551,17 +627,13 @@ class Controller:
         data = data.fillna(0)
         # CPU utilization >= 60%
         self.cpu_limit_detection(data=data, col_class=columns_dict)
-        print("cpu")
         # Memory utilization >= 60%
         self.memory_limit_detection(data=data, col_class=columns_dict)
-        print("memory")
         # Cloud run re-start (startup_latency != 0)
         self.cloud_run_restart_detection(data=data, col_class=columns_dict)
-        print("cloud run")
         # Instance count >= 2
         self.instance_count_detection(data=data, col_class=columns_dict)
-        print("instance_count")
         # Fail Response
         self.request_fail(data=data, col_class=columns_dict)
-        print("request_fail")
+
         return self.anomaly_log
