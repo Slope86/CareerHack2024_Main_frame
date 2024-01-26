@@ -5,6 +5,9 @@ from io import StringIO
 import pandas as pd
 import requests
 from dotenv import load_dotenv
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
 
 load_dotenv()
 
@@ -53,6 +56,7 @@ class Controller:
         self.__real_detection_url = real_detection_url
         self.__username = username
         self.__password = password
+        self.receivers = ["henry880510@gmail.com",'another10508@gmail.com','lauren444416@gmail.com',"cjh9027@gmail.com"]
 
         self.cpu = cpu
         self.memory = memory
@@ -69,6 +73,36 @@ class Controller:
         data = {"username": self.__username, "password": self.__password}
         response = requests.post(self.__login_url, json=data)
         return response.json().get("access_token")
+    
+    def Send_email(self,error_message:str=None,describe:str=None): 
+        receivers = ["henry880510@gmail.com",'another10508@gmail.com','lauren444416@gmail.com',"cjh9027@gmail.com"]
+
+        mail_user = "henry880510@gmail.com"
+        mail_pass = "wfqb mheu bxnt ydrm"
+        content = MIMEMultipart()  #建立MIMEMultipart物件
+        content["subject"] = "VM:dvwa Error Alert"  #郵件標題
+        content["from"] = mail_user  #寄件者
+        content["to"] =','.join(receivers)  #收件者
+        
+        body = f"Dear <u>Colleague</u>,<br><br>" 
+        body += f"error log: <font color='red'><b>{error_message}</b></font> in the ongoing plan.<br>"
+        body += "describe: <br>"
+        body += describe.replace("\n","<br>")+"<br>"
+        body += "Please address it as soon as possible.<br>" 
+        body +="VM:dvwa     Region: us-central1     URL：<a href='https://gcp-asst-bot-3ygjg5oe3q-uc.a.run.app/'>https://gcp-asst-bot-3ygjg5oe3q-uc.a.run.app/</a>"
+        content.attach(MIMEText(body,'html'))  #郵件內容
+
+        with smtplib.SMTP(host="smtp.gmail.com", port="587") as smtp:  # 設定SMTP伺服器
+            try:
+                smtp.ehlo()  # 驗證SMTP伺服器
+                smtp.starttls()  # 建立加密傳輸
+                smtp.login(mail_user, mail_pass)  # 登入寄件者gmail
+                smtp.send_message(content)  # 寄送郵件
+                print("Complete!")
+                return True
+            except Exception as e:
+                print("Error message: ", e)
+                return False
 
     def real_detection(self, inputdata: str = None, ori_log: str = None) -> str:
         """real time detection input error dict from classification anomaly api
