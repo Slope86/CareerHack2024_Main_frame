@@ -28,6 +28,7 @@ class Controller:
         analyze_data_url: str = LLMAPI + "/api/analyze_data",
         gptqa_url: str = LLMAPI + "/api/gptqa",
         real_detection_url: str = LLMAPI + "/api/real_detection",
+        sorter_log_url:str = LLMAPI + "/api/sort_log",
         username: str = USERNAME,
         password: str = PASSWORD,
         cpu: int = 1,
@@ -54,6 +55,7 @@ class Controller:
         self.__gptqa_url = gptqa_url
         self.__login_url = login_url
         self.__real_detection_url = real_detection_url
+        self.__sorter_log_url = sorter_log_url
         self.__username = username
         self.__password = password
         self.receivers = ["henry880510@gmail.com",'another10508@gmail.com','lauren444416@gmail.com',"cjh9027@gmail.com"]
@@ -135,7 +137,7 @@ class Controller:
         data = {"inputdata": inputdata}
         response = requests.post(self.__get_functioncode_url, json=data, headers=headers)
         response_json = response.json()
-
+        
         return response_json
 
     def classification_anomlay(self, inputdata: str = None) -> dict:
@@ -171,6 +173,15 @@ class Controller:
         response_json = response.json()
         return response_json
 
+    def sort_log(self,inpudata:str=None)->str:
+        
+        access_token = self.login_api()
+        headers = {"Authorization": f"Bearer {access_token}"}
+        data = {"inputdata": inpudata}
+        response = requests.post(self.__sorter_log_url, json=data, headers=headers)
+        response_json = response.json()
+        return response_json
+    
     def gptqa(self, query: str = None) -> str:
         """general gpt qa
 
@@ -297,8 +308,8 @@ class Controller:
                     if index not in self.anomaly_log:
                         request_count = " ".join(
                             [
-                                " ".join([f"{col}={val}" for col, val in row.items()])
-                                for index, row in data.loc[index, col_class["request_count"]].iterrows()
+                                " ".join([f"{col}={val} times." for col, val in row.items()])
+                                for index, row in data.loc[[index], col_class["request_count"]].iterrows()
                             ]
                         )
                         self.anomaly_log[
@@ -336,7 +347,7 @@ class Controller:
                     if index not in self.anomaly_log:
                         request_count = " ".join(
                             [
-                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                " ".join([f"{col}={val} times." for col, val in row.items()])
                                 for index, row in data.loc[[index], col_class["request_count"]].iterrows()
                             ]
                         )
@@ -368,7 +379,7 @@ class Controller:
                     if index not in self.anomaly_log:
                         request_count = " ".join(
                             [
-                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                " ".join([f"{col}={val} times." for col, val in row.items()])
                                 for index, row in data.loc[[index], col_class["request_count"]].iterrows()
                             ]
                         )
@@ -400,7 +411,7 @@ class Controller:
                     if index not in self.anomaly_log:
                         request_count = " ".join(
                             [
-                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                " ".join([f"{col}={val} times." for col, val in row.items()])
                                 for index, row in data.loc[[index], col_class["request_count"]].iterrows()
                             ]
                         )
@@ -431,7 +442,7 @@ class Controller:
                     if index not in self.anomaly_log:
                         request_count = " ".join(
                             [
-                                " ".join([f"{col}={val}" for col, val in row.items()])
+                                " ".join([f"{col}={val} times." for col, val in row.items()])
                                 for index, row in data.loc[[index], col_class["request_count"]].iterrows()
                             ]
                         )
@@ -452,7 +463,7 @@ class Controller:
                         )
 
     def anomaly_detection(
-        self, days: int = 0, hours: int = 5, minutes: int = 0, datasetpath: str = "./dataset", dataset: bool = False
+        self, days: int = 0, hours: int = 5, minutes: int = 0, datasetpath: str = "./dataset/", dataset: bool = False
     ) -> dict:
         """anomaly threshold:
             CPU utilization >= 60% 2mins
@@ -493,25 +504,24 @@ class Controller:
             requests_latencies = requests_latencies.drop(requests_latencies.columns[1:], axis=1)
             requests_latencies.columns = ["Request Latency (ms)"]
         else:
-            files = os.listdir()
+            files = os.listdir(datasetpath)
             for f in files:
                 temp = pd.read_csv(datasetpath + f)
-                temp.set_index("Time", inplace=True)
                 if f == "Container CPU Utilization.csv":
                     cpu = temp
-                    cpu.set_index("Time", inplace=True)
+                    cpu.set_index(temp.columns[0], inplace=True,drop=True)
                 elif f == "Container Memory Utilization.csv":
                     memory = temp
-                    memory.set_index("Time", inplace=True)
+                    memory.set_index(temp.columns[0], inplace=True,drop=True)
                 elif f == "Container Startup Latency.csv":
                     startup_latency = temp
-                    startup_latency.set_index("Time", inplace=True)
+                    startup_latency.set_index(temp.columns[0], inplace=True,drop=True)
                 elif f == "Instance Count.csv":
                     instance = temp
-                    instance.set_index("Time", inplace=True)
+                    instance.set_index(temp.columns[0], inplace=True,drop=True)
                 elif f == "Request Count.csv":
                     requests_count = temp
-                    requests_count.set_index("Time", inplace=True)
+                    requests_count.set_index(temp.columns[0], inplace=True,drop=True)
                     for col in requests_count.columns:
                         if "1" in col:
                             requests_count.rename(columns={col: "http code 1xx"})
@@ -525,7 +535,7 @@ class Controller:
                             requests_count.rename(columns={col: "http code 5xx"})
                 elif f == "Request Latency.csv":
                     requests_latencies = temp
-                    requests_latencies.set_index("Time", inplace=True)
+                    requests_latencies.set_index(temp.columns[0], inplace=True)
 
         columns_dict = {}
         columns_dict["instance"] = instance.columns

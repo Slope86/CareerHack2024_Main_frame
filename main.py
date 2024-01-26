@@ -24,15 +24,33 @@ class Detector(threading.Thread):
     
     def run(self):
         while not self.stop_signal.is_set():
-            anomaly_log = str(controller.anomaly_detection(days=1, hours=0, minutes=5))
+            anomaly_log = str(controller.anomaly_detection(days=0, hours=0, minutes=5))
             error_code = controller.classification_anomlay(inputdata=anomaly_log)
             print(error_code)
             action = controller.real_detection(error_code, anomaly_log)
             print(action)
             if "nothing to do" not in action:
                 instruction(action,error_code=error_code)
-            time.sleep(180)
+            time.sleep(300)
 
+    def stop(self):
+        self.stop_signal.set()
+
+class Sortor(threading.Thread):
+    def __init__(self,arg):
+        super(sortor, self).__init__()
+        self.stop_signal = threading.Event()
+        self.status = False
+        self.result= None
+        self.arg=arg
+    
+    def run(self):
+        self.result = controller.sort_log(self.arg)
+
+    def get_result(self):
+        self.join()
+        return self.result
+    
     def stop(self):
         self.stop_signal.set()
 
@@ -93,7 +111,8 @@ def anomaly_detection():
     days = int(request_body["days"])
     hours = int(request_body["hours"])
     minutes = int(request_body["minutes"])
-    anomaly_log = controller.anomaly_detection(days=days, hours=hours, minutes=minutes)
+    dataset = request_body.get("dataset",False)
+    anomaly_log = controller.anomaly_detection(days=days, hours=hours, minutes=minutes,dataset=True)
 
     return json.dumps(anomaly_log)
 
@@ -127,8 +146,11 @@ def instruction(query,dataset=False,error_code="None"):
         if (int(arg1) == -1) and (int(arg2) == -1) and (int(arg3) == -1):
             arg1 = 1
         anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3),dataset=dataset))
+        sortor=Sortor(anomaly_log)
+        sortor.start()
         output = controller.analyze_data(anomaly_log)
-        output = f'error log: \n{anomaly_detection} \nanalyze: \n {output}'
+        sorted_log=sortor.get_result()
+        output = f'error log: \n{sorted_log} \nanalyze: \n {output}'
     elif instruction_code == 3:
         if str(arg1) == "sub":
             cpu = controller.cpu - 1
