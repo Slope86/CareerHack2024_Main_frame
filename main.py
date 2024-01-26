@@ -159,10 +159,10 @@ def instruction(query,dataset=False,error_code="None"):
         if (int(arg3) == -1):
             arg3=0
         anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3),dataset=dataset))
-        sortor=Sortor(anomaly_log[:5000])
+        sortor=Sortor(anomaly_log)
         sortor.start()
         print(len(anomaly_log))
-        output = controller.analyze_data(anomaly_log[:5000])
+        output = controller.analyze_data(anomaly_log)
         sorted_log=sortor.get_result()
         output = f'error log: \n{json.dumps(sorted_log)} \nanalyze: \n {output}'
     elif instruction_code == 3:
