@@ -30,7 +30,7 @@ class Controller:
         gptqa_url: str = LLMAPI + "/api/gptqa",
         real_detection_url: str = LLMAPI + "/api/real_detection",
         sorter_log_url:str = LLMAPI + "/api/sort_log",
-        get_all_metrice_url: str=LLMAPI+"/api/get_all_metrice",
+        get_all_metrice_url: str=LLMAPI+"/api/all_system_metric",
         username: str = USERNAME,
         password: str = PASSWORD,
         cpu: int = 1,
@@ -247,10 +247,10 @@ class Controller:
         headers = {"Authorization": f"Bearer {access_token}"}
 
         data = {"days": days, "hours": hours, "minutes": minutes}
-
+        print(minutes)
         # A get request to the API
         response = requests.post(self.__get_all_metrice_url, json=data, headers=headers)
-
+        print(response)
         response_json = response.json()
 
         metric_list = [
