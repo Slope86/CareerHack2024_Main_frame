@@ -9,6 +9,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 from systemctl import Controller
+import json
 
 controller = Controller()
 app = Flask(__name__)
@@ -38,7 +39,7 @@ class Detector(threading.Thread):
 
 class Sortor(threading.Thread):
     def __init__(self,arg):
-        super(sortor, self).__init__()
+        super(Sortor, self).__init__()
         self.stop_signal = threading.Event()
         self.status = False
         self.result= None
@@ -151,11 +152,11 @@ def instruction(query,dataset=False,error_code="None"):
         if (int(arg1) == -1) and (int(arg2) == -1) and (int(arg3) == -1):
             arg1 = 1
         anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3),dataset=dataset))
-        sortor=Sortor(anomaly_log)
-        sortor.start()
+        #sortor=Sortor(anomaly_log)
+        #sortor.start()
         output = controller.analyze_data(anomaly_log)
-        sorted_log=sortor.get_result()
-        output = f'error log: \n{sorted_log} \nanalyze: \n {output}'
+       # sorted_log=sortor.get_result()
+        output = f'error log: \n{json.dumps(anomaly_log)} \nanalyze: \n {anomaly_log}'
     elif instruction_code == 3:
         if str(arg1) == "sub":
             cpu = controller.cpu - 1

@@ -170,6 +170,7 @@ class Controller:
         headers = {"Authorization": f"Bearer {access_token}"}
         data = {"inputdata": inputdata}
         response = requests.post(self.__analyze_data_url, json=data, headers=headers)
+        print(response)
         response_json = response.json()
         return response_json
 
