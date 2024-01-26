@@ -418,7 +418,7 @@ class Controller:
                         )
 
     def anomaly_detection(
-        self, days: int = 0, hours: int = 5, minutes: int = 0, datasetpath: str = "./", dataset: bool = False
+        self, days: int = 0, hours: int = 5, minutes: int = 0, datasetpath: str = "./dataset", dataset: bool = False
     ) -> dict:
         """anomaly threshold:
             CPU utilization >= 60% 2mins

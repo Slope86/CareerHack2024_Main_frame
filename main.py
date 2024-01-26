@@ -54,7 +54,7 @@ def anomaly_detection():
     return json.dumps(anomaly_log)
 
 
-def instruction(query):
+def instruction(query,dataset):
     """get instruction code and implement action
 
     Args:
@@ -82,7 +82,7 @@ def instruction(query):
     elif instruction_code == 2:
         if (int(arg1) == -1) and (int(arg2) == -1) and (int(arg3) == -1):
             arg1 = 1
-        anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3)))
+        anomaly_log = str(controller.anomaly_detection(days=int(arg1), hours=int(arg2), minutes=int(arg3),dataset=dataset))
         output = controller.analyze_data(anomaly_log)
     elif instruction_code == 3:
         if str(arg1) == "sub":
@@ -98,13 +98,15 @@ def instruction(query):
     elif instruction_code == 4:
         if str(arg1) == "sub":
             memory = controller.memory - 256
+            s="sub"
         else:
             memory = controller.memory + 256
+            s="add"
         status = controller.memory_up_scale(memory=memory)
         if status:
-            output = str(arg1) + " memory finish"
+            output = s + " memory finish"
         else:
-            output = str(arg1) + " memory fail"
+            output = s + " memory fail"
     elif instruction_code == 5:
         if (str(arg1) == "stop") and (detector.status):
             detector.stop()
@@ -130,9 +132,10 @@ def send_query():
     """
     request_body: dict[str, str] = request.json
     query = str(request_body["query"])
-    output = instruction(query=query)
+    dataset = request_body.get("dataset",False)
+    output = instruction(query=query,dataset=dataset)
     print(output)
-    return json.dumps(output)
+    return output
 
 
 if __name__ == "__main__":
