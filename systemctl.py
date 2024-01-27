@@ -319,7 +319,7 @@ class Controller:
             return True
         return False
 
-    def cpu_limit_detection(self, threshold: int = 60, data: pd.DataFrame = None, col_class: dict = None) -> None:
+    def cpu_limit_detection(self, threshold: int = 30, data: pd.DataFrame = None, col_class: dict = None) -> None:
         """detection cpu limit whether >= threshold
 
         Args:
@@ -365,7 +365,7 @@ class Controller:
                             f",CPU utilization {value}% (>=60%)," + self.anomaly_log[temp]
                         )
 
-    def memory_limit_detection(self, threshold: int = 60, data: pd.DataFrame = None, col_class: dict = None) -> None:
+    def memory_limit_detection(self, threshold: int = 30, data: pd.DataFrame = None, col_class: dict = None) -> None:
         """detection memort limit whether >= threshold
 
         Args:

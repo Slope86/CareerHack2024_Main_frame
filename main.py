@@ -136,16 +136,17 @@ def instruction(query,dataset=False,error_code="None"):
     try:
         print(temp)
         instruction_code, arg1, arg2, arg3 = temp
+        if dataset is False:
+            instruction_code = int(instruction_code)
+        else:
+            instruction_code =2
+            arg1=1
+            arg2=1
+            arg3=1
     except ValueError:
         return "".join(temp)
     # select service base on instruction_code
-    if dataset is False:
-        instruction_code = int(instruction_code)
-    else:
-        instruction_code =2
-        arg1=1
-        arg2=1
-        arg3=1
+    
 
     if instruction_code == 1:
         output = controller.gptqa(str(arg1))
