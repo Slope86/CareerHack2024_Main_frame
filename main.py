@@ -25,7 +25,7 @@ class Detector(threading.Thread):
     
     def run(self):
         while not self.stop_signal.is_set():
-            anomaly_log = str(controller.anomaly_detection(days=0, hours=0, minutes=5))
+            anomaly_log = str(controller.anomaly_detection(days=0, hours=1, minutes=0))
             error_code = controller.classification_anomlay(inputdata=anomaly_log)
             print(error_code)
             action = controller.real_detection(error_code, anomaly_log)
